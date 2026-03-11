@@ -1,35 +1,52 @@
 # Land Scout App
 
-Next.js 14 map workspace for scouting land listings, backed by Neon Postgres and Drizzle ORM.
+Next.js 14 map workspace for scouting land listings, backed by Postgres (Neon or local) and Drizzle ORM.
 
-## Setup
+## Local Development
 
-1. Create a database at `neon.tech`.
-2. Copy `.env.local.example` to `.env.local`.
-3. Set `DATABASE_URL` from Neon.
-4. Install dependencies with `npm install`.
-5. Push the schema with `npm run db:push`.
-6. Start the app with `npm run dev`.
+### Option A: Local Postgres (no Neon account needed)
 
-The app runs at `http://localhost:3000` and redirects to `/map`.
+```bash
+docker-compose up -d          # start local postgres
+cp .env.local.example .env.local
+npm install
+npm run db:push               # create schema
+npm run dev                   # start Next.js at localhost:3000
+```
+
+### Option B: Neon (cloud)
+
+1. Create a project at [neon.tech](https://neon.tech)
+2. (Optional) Enable Neon Auth
+3. Copy `.env.local.example` to `.env.local`
+4. Set `DATABASE_URL` (and `NEON_AUTH_*` if using auth) from the Neon dashboard
+
+```bash
+npm install
+npm run db:push
+npm run dev
+```
+
+## Migrate SQLite Data
+
+```bash
+cd ~/Repos/land-researcher
+# Local postgres:
+DATABASE_URL=postgresql://land_scout:land_scout@localhost:5432/land_scout uv run python scripts/migrate_to_neon.py
+# Or Neon:
+DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require uv run python scripts/migrate_to_neon.py
+```
 
 ## Environment
 
-```bash
-DATABASE_URL=postgresql://user:password@ep-xxx.neon.tech/neondb?sslmode=require
-
-# Optional: trigger a remote scrape worker from the sidebar button
-SCRAPE_WEBHOOK_URL=https://example.com/land-scout/run
-SCRAPE_WEBHOOK_BEARER_TOKEN=
-SCRAPE_WEBHOOK_SECRET=
-```
+See `.env.local.example` for all variables.
 
 ## Database Commands
 
 ```bash
-npm run db:generate
-npm run db:push
-npm run db:studio
+npm run db:generate   # generate migration SQL from schema changes
+npm run db:push       # push schema directly (dev)
+npm run db:studio     # open Drizzle Studio GUI
 ```
 
 ## API Routes
@@ -40,16 +57,8 @@ npm run db:studio
 - `GET /api/runs`
 - `POST /api/scrape`
 
-## Data Migration
-
-To migrate the existing SQLite data into Neon:
-
-```bash
-cd /Users/erai/Repos/land-researcher
-DATABASE_URL=postgresql://... uv run python scripts/migrate_to_neon.py
-```
-
 ## Notes
 
-- Listings without exact coordinates are mapped with deterministic state-centroid fallback pins.
-- The app returns empty data until `DATABASE_URL` is set.
+- Listings without exact coordinates use deterministic state-centroid fallback pins.
+- The `lib/db/index.ts` auto-detects Neon vs local Postgres from `DATABASE_URL`.
+- The app returns empty data until `DATABASE_URL` is configured.

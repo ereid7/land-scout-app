@@ -94,7 +94,7 @@ export const scoutRuns = pgTable(
   'scout_runs',
   {
     id: text('id').primaryKey().$defaultFn(() => randomUUID()),
-    run_id: text('run_id').notNull(),
+    run_id: text('run_id').notNull().unique(),
     started_at: timestampColumn('started_at'),
     finished_at: timestampColumn('finished_at'),
     status: text('status').default('running').notNull(),
