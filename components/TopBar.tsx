@@ -16,6 +16,8 @@ export default function TopBar({
   loading: boolean;
   error: string;
 }) {
+  const authEnabled = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'true';
+
   return (
     <header className="app-topbar">
       <div className="brand-block">
@@ -38,7 +40,7 @@ export default function TopBar({
           : 'Waiting for runs...'}
       </div>
       <ScrapeBadge />
-      <UserButton size="icon" />
+      {authEnabled && <UserButton size="icon" />}
       {error ? <div className="topbar-stat topbar-stat--error">{error}</div> : null}
     </header>
   );

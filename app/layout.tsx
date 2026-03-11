@@ -14,11 +14,11 @@ export default function RootLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const authEnabled = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'true';
+
   return (
     <html lang="en">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
-      </body>
+      <body>{authEnabled ? <AuthProvider>{children}</AuthProvider> : children}</body>
     </html>
   );
 }
