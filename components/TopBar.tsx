@@ -1,5 +1,7 @@
 'use client';
 
+import { UserButton } from '@neondatabase/auth/react/ui';
+
 import ScrapeBadge from '@/components/ScrapeBadge';
 import type { Stats } from '@/lib/types';
 
@@ -22,7 +24,7 @@ export default function TopBar({
         </span>
         <div>
           <div className="brand-title">Land Scout</div>
-          <div className="brand-subtitle">Next.js + Supabase map workspace</div>
+          <div className="brand-subtitle">Next.js + Neon + Drizzle map workspace</div>
         </div>
       </div>
       <div className="topbar-stat">{stats ? `${stats.total} total listings` : 'Loading stats...'}</div>
@@ -30,8 +32,11 @@ export default function TopBar({
         {loading ? 'Loading listings...' : `${count} shown`}
       </div>
       <div className="topbar-stat">Avg score {stats ? stats.avgScore : '...'}</div>
-      <div className="topbar-stat">{stats ? `New today ${stats.newToday}` : 'Checking runs...'}</div>
+      <div className="topbar-stat">
+        {stats?.lastRun ? `Last run ${new Date(stats.lastRun).toLocaleString()}` : 'Waiting for runs...'}
+      </div>
       <ScrapeBadge />
+      <UserButton size="icon" />
       {error ? <div className="topbar-stat topbar-stat--error">{error}</div> : null}
     </header>
   );

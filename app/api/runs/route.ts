@@ -1,31 +1,24 @@
+import { desc } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createClient, isSupabaseConfigured } from '@/lib/supabase-server';
+import { db, schema } from '@/lib/db';
 
-export async function GET(req: NextRequest) {
-  const limit = Math.min(Math.max(Number.parseInt(req.nextUrl.searchParams.get('limit') ?? '10', 10), 1), 50);
-
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ runs: [] }, {
-      headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30' },
-    });
+function parseLimit(value: string | null) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return 10;
   }
+  return Math.max(1, Math.min(50, Math.trunc(parsed)));
+}
 
-  const supabase = createClient();
-  const { data, error } = await supabase
-    .from('scout_runs')
-    .select('*')
-    .order('started_at', { ascending: false })
+export async function GET(request: NextRequest) {
+  const limit = parseLimit(request.nextUrl.searchParams.get('limit'));
+
+  const runs = await db
+    .select()
+    .from(schema.scoutRuns)
+    .orderBy(desc(schema.scoutRuns.startedAt))
     .limit(limit);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(
-    { runs: data ?? [] },
-    {
-      headers: { 'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30' },
-    },
-  );
+  return NextResponse.json({ runs });
 }

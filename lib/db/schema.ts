@@ -1,0 +1,170 @@
+import { randomUUID } from 'crypto';
+
+import { relations } from 'drizzle-orm';
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgSchema,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+
+const numericColumn = (name: string) => numeric(name, { mode: 'number' });
+const timestampColumn = (name: string) => timestamp(name, { withTimezone: true, mode: 'string' });
+
+export const neonAuth = pgSchema('neon_auth');
+
+export const neonAuthUsers = neonAuth.table('users_sync', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  email: text('email'),
+  createdAt: timestampColumn('created_at'),
+});
+
+export const listings = pgTable(
+  'listings',
+  {
+    id: text('id').primaryKey(),
+    source: text('source').notNull(),
+    url: text('url').notNull(),
+    title: text('title'),
+    price: numericColumn('price'),
+    acres: numericColumn('acres'),
+    price_per_acre: numericColumn('price_per_acre'),
+    state: text('state'),
+    county: text('county'),
+    city: text('city'),
+    description: text('description'),
+    has_trees: boolean('has_trees').default(false).notNull(),
+    has_road_access: boolean('has_road_access').default(false).notNull(),
+    has_water: boolean('has_water').default(false).notNull(),
+    owner_financing: boolean('owner_financing').default(false).notNull(),
+    in_floodplain: boolean('in_floodplain').default(false).notNull(),
+    is_duplicate: boolean('is_duplicate').default(false).notNull(),
+    motivated_seller: boolean('motivated_seller').default(false).notNull(),
+    enriched: boolean('enriched').default(false).notNull(),
+    notified: boolean('notified').default(false).notNull(),
+    price_reduced: boolean('price_reduced').default(false).notNull(),
+    is_down_payment: boolean('is_down_payment').default(false).notNull(),
+    latitude: numericColumn('latitude'),
+    longitude: numericColumn('longitude'),
+    flood_zone: text('flood_zone'),
+    elevation_ft: numericColumn('elevation_ft'),
+    road_distance_m: numericColumn('road_distance_m'),
+    water_distance_m: numericColumn('water_distance_m'),
+    nearest_town: text('nearest_town'),
+    town_distance_m: numericColumn('town_distance_m'),
+    score: integer('score').default(0).notNull(),
+    hoa_risk: text('hoa_risk').default('unknown').notNull(),
+    hoa_annual_fee: numericColumn('hoa_annual_fee'),
+    hoa_flags: text('hoa_flags'),
+    original_price: numericColumn('original_price'),
+    full_price: numericColumn('full_price'),
+    price_drop_pct: numericColumn('price_drop_pct'),
+    owner_state: text('owner_state'),
+    zoning: text('zoning'),
+    parcel_source: text('parcel_source'),
+    assessed_value: numericColumn('assessed_value'),
+    canonical_id: text('canonical_id'),
+    source_aliases: text('source_aliases'),
+    days_on_market: integer('days_on_market').default(0).notNull(),
+    drive_hours: numericColumn('drive_hours'),
+    est_annual_lease: numericColumn('est_annual_lease'),
+    status: text('status').default('active').notNull(),
+    first_seen: timestampColumn('first_seen'),
+    last_seen: timestampColumn('last_seen'),
+    gone_since: timestampColumn('gone_since'),
+    raw_data: jsonb('raw_data'),
+  },
+  (table) => [
+    index('listings_score_idx').on(table.score),
+    index('listings_state_idx').on(table.state),
+    index('listings_source_idx').on(table.source),
+    index('listings_status_idx').on(table.status),
+    index('listings_price_idx').on(table.price),
+    index('listings_first_seen_idx').on(table.first_seen),
+  ],
+);
+
+export const scoutRuns = pgTable(
+  'scout_runs',
+  {
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+    runId: text('run_id').notNull(),
+    startedAt: timestampColumn('started_at'),
+    finishedAt: timestampColumn('finished_at'),
+    status: text('status').default('running').notNull(),
+    scrapersRun: integer('scrapers_run').default(0).notNull(),
+    scrapersOk: integer('scrapers_ok').default(0).notNull(),
+    scrapersErrored: integer('scrapers_errored').default(0).notNull(),
+    scrapersZero: integer('scrapers_zero').default(0).notNull(),
+    listingsFound: integer('listings_found').default(0).notNull(),
+    listingsNew: integer('listings_new').default(0).notNull(),
+    listingsDeduped: integer('listings_deduped').default(0).notNull(),
+    listingsStale: integer('listings_stale').default(0).notNull(),
+    configSnapshot: jsonb('config_snapshot'),
+    errorLog: text('error_log'),
+  },
+  (table) => [
+    uniqueIndex('scout_runs_run_id_idx').on(table.runId),
+    index('scout_runs_started_at_idx').on(table.startedAt),
+  ],
+);
+
+export const scraperRuns = pgTable(
+  'scraper_runs',
+  {
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+    scoutRunId: text('scout_run_id').references(() => scoutRuns.runId, {
+      onDelete: 'set null',
+    }),
+    scraperId: text('scraper_id').notNull(),
+    startedAt: timestampColumn('started_at'),
+    finishedAt: timestampColumn('finished_at'),
+    listingsFound: integer('listings_found').default(0).notNull(),
+    listingsNew: integer('listings_new').default(0).notNull(),
+    error: text('error'),
+    durationSecs: numericColumn('duration_secs'),
+  },
+  (table) => [
+    index('scraper_runs_scout_run_id_idx').on(table.scoutRunId),
+    index('scraper_runs_scraper_id_idx').on(table.scraperId),
+    index('scraper_runs_started_at_idx').on(table.startedAt),
+  ],
+);
+
+export const savedSearches = pgTable(
+  'saved_searches',
+  {
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => neonAuthUsers.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    filters: jsonb('filters').notNull(),
+    notify: boolean('notify').default(false).notNull(),
+    createdAt: timestampColumn('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('saved_searches_user_id_idx').on(table.userId)],
+);
+
+export const scoutRunsRelations = relations(scoutRuns, ({ many }) => ({
+  scraperRuns: many(scraperRuns),
+}));
+
+export const scraperRunsRelations = relations(scraperRuns, ({ one }) => ({
+  scoutRun: one(scoutRuns, {
+    fields: [scraperRuns.scoutRunId],
+    references: [scoutRuns.runId],
+  }),
+}));
+
+export type Listing = typeof listings.$inferSelect;
+export type ScoutRun = typeof scoutRuns.$inferSelect;
+export type ScraperRun = typeof scraperRuns.$inferSelect;
+export type SavedSearch = typeof savedSearches.$inferSelect;

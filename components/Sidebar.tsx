@@ -117,11 +117,27 @@ function StateSelect({
   );
 }
 
-function RunScrapeButton() {
+export default function Sidebar({
+  filters,
+  onChange,
+  onReset,
+  stats,
+}: {
+  filters: ListingFilters;
+  onChange: Dispatch<SetStateAction<ListingFilters>>;
+  onReset: () => void;
+  stats: Stats | null;
+}) {
   const [status, setStatus] = useState<'idle' | 'running' | 'started' | 'error'>('idle');
+  const states = Object.keys(stats?.byState ?? {}).sort();
 
-  async function handleClick() {
+  function updateFilter<Key extends keyof ListingFilters>(key: Key, value: ListingFilters[Key]) {
+    onChange((current) => ({ ...current, [key]: value }));
+  }
+
+  async function handleRunScrape() {
     setStatus('running');
+
     try {
       const response = await fetch('/api/scrape', {
         method: 'POST',
@@ -139,38 +155,6 @@ function RunScrapeButton() {
       setStatus('error');
       window.setTimeout(() => setStatus('idle'), 3000);
     }
-  }
-
-  return (
-    <button
-      className={`primary-button primary-button--blue${status === 'running' ? ' primary-button--disabled' : ''}`}
-      type="button"
-      disabled={status === 'running'}
-      onClick={handleClick}
-    >
-      {status === 'idle' && 'Run scrape'}
-      {status === 'running' && 'Running...'}
-      {status === 'started' && 'Started'}
-      {status === 'error' && 'Error'}
-    </button>
-  );
-}
-
-export default function Sidebar({
-  filters,
-  onChange,
-  onReset,
-  stats,
-}: {
-  filters: ListingFilters;
-  onChange: Dispatch<SetStateAction<ListingFilters>>;
-  onReset: () => void;
-  stats: Stats | null;
-}) {
-  const states = Object.keys(stats?.byState ?? {}).sort();
-
-  function updateFilter<Key extends keyof ListingFilters>(key: Key, value: ListingFilters[Key]) {
-    onChange((current) => ({ ...current, [key]: value }));
   }
 
   return (
@@ -223,10 +207,7 @@ export default function Sidebar({
         >
           Owner finance only
         </FilterCheckbox>
-        <FilterCheckbox
-          checked={filters.noHoa}
-          onCheckedChange={(checked) => updateFilter('noHoa', checked)}
-        >
+        <FilterCheckbox checked={filters.noHoa} onCheckedChange={(checked) => updateFilter('noHoa', checked)}>
           No high HOA risk
         </FilterCheckbox>
         <FilterCheckbox
@@ -241,7 +222,17 @@ export default function Sidebar({
         <button className="secondary-button" type="button" onClick={onReset}>
           Reset filters
         </button>
-        <RunScrapeButton />
+        <button
+          className={`primary-button primary-button--blue${status === 'running' ? ' primary-button--disabled' : ''}`}
+          type="button"
+          disabled={status === 'running'}
+          onClick={handleRunScrape}
+        >
+          {status === 'idle' && 'Run scrape'}
+          {status === 'running' && 'Running...'}
+          {status === 'started' && 'Started'}
+          {status === 'error' && 'Error'}
+        </button>
       </div>
 
       {stats ? (

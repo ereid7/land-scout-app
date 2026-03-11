@@ -1,5 +1,5 @@
-import { formatCurrency } from '@/lib/listings';
-import type { Listing } from '@/lib/types';
+import { formatCurrency } from '@/lib/listing-helpers';
+import type { ListingWithLocation } from '@/lib/types';
 
 function escapeHtml(value: unknown) {
   return String(value ?? '')
@@ -23,7 +23,7 @@ function scoreTone(score: number) {
   return 'popup-score--red';
 }
 
-function badgeList(listing: Listing) {
+function badgeList(listing: ListingWithLocation) {
   const badges: string[] = [];
   if (listing.owner_financing) {
     badges.push('Owner Finance');
@@ -46,14 +46,14 @@ function badgeList(listing: Listing) {
   return badges;
 }
 
-export function ListingPopup({ listing }: { listing: Listing }) {
+export function ListingPopup({ listing }: { listing: ListingWithLocation }) {
   const badges = badgeList(listing);
 
   return (
     <div className="popup-card">
       <div className={`popup-score ${scoreTone(listing.score)}`}>{listing.score}★</div>
       <div className="popup-price">
-        {formatCurrency(listing.price)} · {listing.acres} ac
+        {formatCurrency(listing.price)} · {listing.acres ?? 'N/A'} ac
       </div>
       <div className="popup-meta">
         {listing.price_per_acre && listing.price_per_acre > 0
@@ -74,7 +74,7 @@ export function ListingPopup({ listing }: { listing: Listing }) {
           ))}
         </div>
       ) : null}
-      {listing.days_on_market > 0 ? (
+      {(listing.days_on_market ?? 0) > 0 ? (
         <div className="popup-meta">{listing.days_on_market} days on market</div>
       ) : null}
       {listing.url ? (
@@ -86,7 +86,7 @@ export function ListingPopup({ listing }: { listing: Listing }) {
   );
 }
 
-export function renderPopupMarkup(listing: Listing) {
+export function renderPopupMarkup(listing: ListingWithLocation) {
   const badges = badgeList(listing)
     .map((badge) => `<span class="popup-badge">${escapeHtml(badge)}</span>`)
     .join('');
@@ -96,7 +96,7 @@ export function renderPopupMarkup(listing: Listing) {
     .join(', ');
 
   const marketText =
-    listing.days_on_market > 0
+    (listing.days_on_market ?? 0) > 0
       ? `<div class="popup-meta">${escapeHtml(listing.days_on_market)} days on market</div>`
       : '';
 
@@ -107,7 +107,7 @@ export function renderPopupMarkup(listing: Listing) {
   return `
     <div class="popup-card">
       <div class="popup-score ${scoreTone(listing.score)}">${escapeHtml(listing.score)}★</div>
-      <div class="popup-price">${escapeHtml(formatCurrency(listing.price))} · ${escapeHtml(listing.acres)} ac</div>
+      <div class="popup-price">${escapeHtml(formatCurrency(listing.price))} · ${escapeHtml(listing.acres ?? 'N/A')} ac</div>
       <div class="popup-meta">${
         listing.price_per_acre && listing.price_per_acre > 0
           ? `${escapeHtml(formatCurrency(listing.price_per_acre))}/ac`

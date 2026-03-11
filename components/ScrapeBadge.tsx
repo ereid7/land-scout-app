@@ -71,13 +71,13 @@ export default function ScrapeBadge() {
     if (run.status === 'error') {
       return { label: 'Last scrape failed', tone: 'scrape-badge--error' };
     }
-    return { label: `Last scrape +${run.listings_new}`, tone: 'scrape-badge--success' };
+    return { label: `Last scrape +${run.listingsNew}`, tone: 'scrape-badge--success' };
   }, [error, run]);
 
   return (
     <div className={`scrape-badge ${status.tone}`}>
       <span className="scrape-badge__label">{status.label}</span>
-      <span className="scrape-badge__meta">{formatRelativeTime(run?.started_at ?? null)}</span>
+      <span className="scrape-badge__meta">{formatRelativeTime(run?.startedAt ?? null)}</span>
     </div>
   );
 }

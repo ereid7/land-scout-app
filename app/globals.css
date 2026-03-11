@@ -70,6 +70,7 @@ a {
   display: flex;
   align-items: center;
   gap: 18px;
+  flex-wrap: wrap;
   min-height: 56px;
   padding: 0 20px;
   color: #f7f3eb;
@@ -316,6 +317,10 @@ a {
   gap: 10px;
 }
 
+.sidebar__actions a {
+  text-decoration: none;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
@@ -470,6 +475,33 @@ a {
 .map-canvas {
   position: absolute;
   inset: 0;
+}
+
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 32px 20px;
+}
+
+.auth-page--account {
+  align-items: flex-start;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  padding: 18px;
+  border: 1px solid rgba(39, 73, 63, 0.14);
+  border-radius: 28px;
+  background: rgba(251, 247, 238, 0.92);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.auth-card--wide {
+  width: min(960px, 100%);
 }
 
 .list-toggle {

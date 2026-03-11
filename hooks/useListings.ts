@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { normalizeFeatureCollection } from '@/lib/listings';
-import type { Listing, ListingFeatureCollection, ListingFilters } from '@/lib/types';
+import { normalizeFeatureCollection } from '@/lib/listing-helpers';
+import type { ListingFeatureCollection, ListingFilters, ListingWithLocation } from '@/lib/types';
 
 export function useListings(filters: ListingFilters) {
-  const [listings, setListings] = useState<Listing[]>([]);
+  const [listings, setListings] = useState<ListingWithLocation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const timerRef = useRef<number | null>(null);

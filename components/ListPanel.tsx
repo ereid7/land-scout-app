@@ -1,7 +1,7 @@
 'use client';
 
-import { formatCurrency } from '@/lib/listings';
-import type { Listing } from '@/lib/types';
+import { formatCurrency } from '@/lib/listing-helpers';
+import type { ListingWithLocation } from '@/lib/types';
 
 function scoreClass(score: number) {
   if (score >= 90) {
@@ -23,7 +23,7 @@ export default function ListPanel({
   onSelect,
   onClose,
 }: {
-  listings: Listing[];
+  listings: ListingWithLocation[];
   selectedId: string | null;
   open: boolean;
   onSelect: (listingId: string) => void;
@@ -33,7 +33,7 @@ export default function ListPanel({
     if (right.score !== left.score) {
       return right.score - left.score;
     }
-    return left.price - right.price;
+    return (left.price ?? Number.MAX_SAFE_INTEGER) - (right.price ?? Number.MAX_SAFE_INTEGER);
   });
 
   return (
@@ -60,7 +60,7 @@ export default function ListPanel({
             >
               <div className="list-card__top">
                 <div className="list-card__price">
-                  {formatCurrency(listing.price)} · {listing.acres} ac
+                  {formatCurrency(listing.price)} · {listing.acres ?? 'N/A'} ac
                 </div>
                 <div className={scoreClass(listing.score)}>{listing.score}</div>
               </div>
@@ -69,7 +69,7 @@ export default function ListPanel({
               </div>
               <div className="list-card__meta">
                 {listing.source || 'Unknown source'}
-                {listing.days_on_market > 0 ? ` · ${listing.days_on_market}d listed` : ''}
+                {(listing.days_on_market ?? 0) > 0 ? ` · ${listing.days_on_market}d listed` : ''}
               </div>
               <div className="list-card__badges">
                 {listing.owner_financing ? <span className="pill">Owner Finance</span> : null}

@@ -5,7 +5,7 @@ import type { MutableRefObject } from 'react';
 import type { FeatureCollection, GeoJsonProperties, Point } from 'geojson';
 
 import { renderPopupMarkup } from '@/components/ListingPopup';
-import type { Listing } from '@/lib/types';
+import type { ListingWithLocation } from '@/lib/types';
 
 const MAP_STYLE = 'https://tiles.stadiamaps.com/styles/alidade_smooth.json';
 type MapLibreModule = typeof import('maplibre-gl');
@@ -19,7 +19,7 @@ const EMPTY_COLLECTION: FeatureCollectionData = {
   features: [],
 };
 
-function toFeatureCollection(listings: Listing[]): FeatureCollectionData {
+function toFeatureCollection(listings: ListingWithLocation[]): FeatureCollectionData {
   return {
     type: 'FeatureCollection' as const,
     features: listings
@@ -46,7 +46,7 @@ function setSourceData(map: MapInstance, sourceId: string, data: FeatureCollecti
   source?.setData(data);
 }
 
-function updateSelectedSource(map: MapInstance, listing: Listing | null) {
+function updateSelectedSource(map: MapInstance, listing: ListingWithLocation | null) {
   if (
     !listing ||
     !Number.isFinite(listing.longitude) ||
@@ -78,7 +78,7 @@ function ensureLayers(
   maplibregl: MapLibreModule,
   onSelect: (listingId: string | null) => void,
   popupRef: MutableRefObject<PopupInstance | null>,
-  listingsRef: MutableRefObject<Listing[]>,
+  listingsRef: MutableRefObject<ListingWithLocation[]>,
 ) {
   if (!map.getSource('listings')) {
     map.addSource('listings', {
@@ -189,7 +189,7 @@ function ensureLayers(
     });
   }
 
-  const openPopup = (listing: Listing, coordinates: [number, number]) => {
+  const openPopup = (listing: ListingWithLocation, coordinates: [number, number]) => {
     popupRef.current?.remove();
     popupRef.current = new maplibregl.Popup({
       maxWidth: '290px',
@@ -268,7 +268,7 @@ export default function Map({
   selectedId,
   onSelect,
 }: {
-  listings: Listing[];
+  listings: ListingWithLocation[];
   selectedId: string | null;
   onSelect: (listingId: string | null) => void;
 }) {
