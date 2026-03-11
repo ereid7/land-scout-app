@@ -6,6 +6,7 @@ import * as Checkbox from '@radix-ui/react-checkbox';
 import * as Select from '@radix-ui/react-select';
 import * as Slider from '@radix-ui/react-slider';
 
+import { authClient } from '@/lib/auth/client';
 import type { ListingFilters, Stats } from '@/lib/types';
 
 function FilterGroup({
@@ -128,32 +129,47 @@ export default function Sidebar({
   onReset: () => void;
   stats: Stats | null;
 }) {
-  const [status, setStatus] = useState<'idle' | 'running' | 'started' | 'error'>('idle');
+  const { data: session } = authClient.useSession();
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const states = Object.keys(stats?.byState ?? {}).sort();
 
   function updateFilter<Key extends keyof ListingFilters>(key: Key, value: ListingFilters[Key]) {
     onChange((current) => ({ ...current, [key]: value }));
   }
 
-  async function handleRunScrape() {
-    setStatus('running');
+  async function handleSaveSearch() {
+    if (!session?.user) {
+      return;
+    }
+
+    const defaultName = filters.state ? `${filters.state} watchlist` : 'Land Scout search';
+    const name = window.prompt('Name this saved search', defaultName)?.trim();
+    if (!name) {
+      return;
+    }
+
+    setSaveState('saving');
 
     try {
-      const response = await fetch('/api/scrape', {
+      const response = await fetch('/api/saved-searches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ triggered_from: 'sidebar' }),
+        body: JSON.stringify({
+          name,
+          filters,
+          notify: false,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to trigger scrape (${response.status})`);
+        throw new Error(`Failed to save search (${response.status})`);
       }
 
-      setStatus('started');
-      window.setTimeout(() => setStatus('idle'), 5000);
+      setSaveState('saved');
+      window.setTimeout(() => setSaveState('idle'), 3000);
     } catch {
-      setStatus('error');
-      window.setTimeout(() => setStatus('idle'), 3000);
+      setSaveState('error');
+      window.setTimeout(() => setSaveState('idle'), 3000);
     }
   }
 
@@ -222,17 +238,25 @@ export default function Sidebar({
         <button className="secondary-button" type="button" onClick={onReset}>
           Reset filters
         </button>
-        <button
-          className={`primary-button primary-button--blue${status === 'running' ? ' primary-button--disabled' : ''}`}
-          type="button"
-          disabled={status === 'running'}
-          onClick={handleRunScrape}
-        >
-          {status === 'idle' && 'Run scrape'}
-          {status === 'running' && 'Running...'}
-          {status === 'started' && 'Started'}
-          {status === 'error' && 'Error'}
-        </button>
+        {session?.user ? (
+          <button
+            className={`primary-button primary-button--blue${
+              saveState === 'saving' ? ' primary-button--disabled' : ''
+            }`}
+            type="button"
+            disabled={saveState === 'saving'}
+            onClick={handleSaveSearch}
+          >
+            {saveState === 'idle' && 'Save Search'}
+            {saveState === 'saving' && 'Saving...'}
+            {saveState === 'saved' && 'Saved'}
+            {saveState === 'error' && 'Error'}
+          </button>
+        ) : (
+          <a className="primary-button primary-button--blue" href="/auth/sign-in">
+            Sign in to save searches
+          </a>
+        )}
       </div>
 
       {stats ? (

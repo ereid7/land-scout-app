@@ -1,7 +1,29 @@
-import { boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { randomUUID } from 'crypto';
+
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  numeric,
+  pgSchema,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 const numericColumn = (name: string) => numeric(name, { mode: 'number' });
 const timestampColumn = (name: string) => timestamp(name, { withTimezone: true, mode: 'string' });
+
+export const neonAuth = pgSchema('neon_auth');
+
+export const neonAuthUsers = neonAuth.table('users_sync', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  email: text('email'),
+  createdAt: timestampColumn('created_at'),
+});
 
 export const listings = pgTable(
   'listings',
@@ -71,7 +93,7 @@ export const listings = pgTable(
 export const scoutRuns = pgTable(
   'scout_runs',
   {
-    id: text('id').primaryKey(),
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
     run_id: text('run_id').notNull(),
     started_at: timestampColumn('started_at'),
     finished_at: timestampColumn('finished_at'),
@@ -96,7 +118,7 @@ export const scoutRuns = pgTable(
 export const scraperRuns = pgTable(
   'scraper_runs',
   {
-    id: text('id').primaryKey(),
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
     scout_run_id: text('scout_run_id').references(() => scoutRuns.run_id, {
       onDelete: 'set null',
     }),
@@ -115,6 +137,22 @@ export const scraperRuns = pgTable(
   ],
 );
 
+export const savedSearches = pgTable(
+  'saved_searches',
+  {
+    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => neonAuthUsers.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    filters: jsonb('filters').notNull(),
+    notify: boolean('notify').default(false).notNull(),
+    createdAt: timestampColumn('created_at').defaultNow().notNull(),
+  },
+  (table) => [index('saved_searches_user_id_idx').on(table.userId)],
+);
+
 export type Listing = typeof listings.$inferSelect;
 export type ScoutRun = typeof scoutRuns.$inferSelect;
 export type ScraperRun = typeof scraperRuns.$inferSelect;
+export type SavedSearch = typeof savedSearches.$inferSelect;

@@ -1,14 +1,14 @@
 import type {
   Listing as DatabaseListing,
+  SavedSearch as DatabaseSavedSearch,
   ScoutRun as DatabaseScoutRun,
   ScraperRun as DatabaseScraperRun,
 } from './db/schema';
 
 export type Listing = DatabaseListing;
+export type SavedSearch = DatabaseSavedSearch;
 export type ScoutRun = DatabaseScoutRun;
 export type ScraperRun = DatabaseScraperRun;
-export type ListingRow = DatabaseListing;
-export type ScoutRunStatus = DatabaseScoutRun['status'];
 
 export type LocationSource = 'listing' | 'state_centroid';
 
@@ -32,8 +32,6 @@ export interface Stats {
   avgScore: number;
   byState: Record<string, number>;
   lastRun: string | null;
-  newToday: number;
-  lastRunStatus: ScoutRunStatus | null;
 }
 
 export interface ListingFeature {

@@ -1,9 +1,11 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 
-import { databaseUrl } from '@/lib/env';
-
 import * as schema from './schema';
+
+const databaseUrl =
+  process.env.DATABASE_URL ??
+  'postgresql://placeholder:placeholder@localhost/landscout?sslmode=require';
 
 const sql = neon(databaseUrl);
 

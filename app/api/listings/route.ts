@@ -2,7 +2,6 @@ import { and, desc, eq, gte, isNull, lte, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db, schema } from '@/lib/db';
-import { hasDatabaseUrl } from '@/lib/env';
 import { listingsToFeatureCollection } from '@/lib/listing-helpers';
 
 export const dynamic = 'force-dynamic';
@@ -13,10 +12,6 @@ function parseNumber(value: string | null, fallback: number) {
 }
 
 export async function GET(request: NextRequest) {
-  if (!hasDatabaseUrl) {
-    return NextResponse.json(listingsToFeatureCollection([]));
-  }
-
   const { searchParams } = request.nextUrl;
 
   const minScore = Math.max(0, Math.min(100, parseNumber(searchParams.get('min_score'), 0)));
