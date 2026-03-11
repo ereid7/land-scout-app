@@ -1,30 +1,7 @@
-import { randomUUID } from 'crypto';
-
-import { relations } from 'drizzle-orm';
-import {
-  boolean,
-  index,
-  integer,
-  jsonb,
-  numeric,
-  pgSchema,
-  pgTable,
-  text,
-  timestamp,
-  uniqueIndex,
-} from 'drizzle-orm/pg-core';
+import { boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 const numericColumn = (name: string) => numeric(name, { mode: 'number' });
 const timestampColumn = (name: string) => timestamp(name, { withTimezone: true, mode: 'string' });
-
-export const neonAuth = pgSchema('neon_auth');
-
-export const neonAuthUsers = neonAuth.table('users_sync', {
-  id: text('id').primaryKey(),
-  name: text('name'),
-  email: text('email'),
-  createdAt: timestampColumn('created_at'),
-});
 
 export const listings = pgTable(
   'listings',
@@ -94,77 +71,50 @@ export const listings = pgTable(
 export const scoutRuns = pgTable(
   'scout_runs',
   {
-    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
-    runId: text('run_id').notNull(),
-    startedAt: timestampColumn('started_at'),
-    finishedAt: timestampColumn('finished_at'),
+    id: text('id').primaryKey(),
+    run_id: text('run_id').notNull(),
+    started_at: timestampColumn('started_at'),
+    finished_at: timestampColumn('finished_at'),
     status: text('status').default('running').notNull(),
-    scrapersRun: integer('scrapers_run').default(0).notNull(),
-    scrapersOk: integer('scrapers_ok').default(0).notNull(),
-    scrapersErrored: integer('scrapers_errored').default(0).notNull(),
-    scrapersZero: integer('scrapers_zero').default(0).notNull(),
-    listingsFound: integer('listings_found').default(0).notNull(),
-    listingsNew: integer('listings_new').default(0).notNull(),
-    listingsDeduped: integer('listings_deduped').default(0).notNull(),
-    listingsStale: integer('listings_stale').default(0).notNull(),
-    configSnapshot: jsonb('config_snapshot'),
-    errorLog: text('error_log'),
+    scrapers_run: integer('scrapers_run').default(0).notNull(),
+    scrapers_ok: integer('scrapers_ok').default(0).notNull(),
+    scrapers_errored: integer('scrapers_errored').default(0).notNull(),
+    scrapers_zero: integer('scrapers_zero').default(0).notNull(),
+    listings_found: integer('listings_found').default(0).notNull(),
+    listings_new: integer('listings_new').default(0).notNull(),
+    listings_deduped: integer('listings_deduped').default(0).notNull(),
+    listings_stale: integer('listings_stale').default(0).notNull(),
+    config_snapshot: jsonb('config_snapshot'),
+    error_log: text('error_log'),
   },
   (table) => [
-    uniqueIndex('scout_runs_run_id_idx').on(table.runId),
-    index('scout_runs_started_at_idx').on(table.startedAt),
+    uniqueIndex('scout_runs_run_id_idx').on(table.run_id),
+    index('scout_runs_started_at_idx').on(table.started_at),
   ],
 );
 
 export const scraperRuns = pgTable(
   'scraper_runs',
   {
-    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
-    scoutRunId: text('scout_run_id').references(() => scoutRuns.runId, {
+    id: text('id').primaryKey(),
+    scout_run_id: text('scout_run_id').references(() => scoutRuns.run_id, {
       onDelete: 'set null',
     }),
-    scraperId: text('scraper_id').notNull(),
-    startedAt: timestampColumn('started_at'),
-    finishedAt: timestampColumn('finished_at'),
-    listingsFound: integer('listings_found').default(0).notNull(),
-    listingsNew: integer('listings_new').default(0).notNull(),
+    scraper_id: text('scraper_id').notNull(),
+    started_at: timestampColumn('started_at'),
+    finished_at: timestampColumn('finished_at'),
+    listings_found: integer('listings_found').default(0).notNull(),
+    listings_new: integer('listings_new').default(0).notNull(),
     error: text('error'),
-    durationSecs: numericColumn('duration_secs'),
+    duration_secs: numericColumn('duration_secs'),
   },
   (table) => [
-    index('scraper_runs_scout_run_id_idx').on(table.scoutRunId),
-    index('scraper_runs_scraper_id_idx').on(table.scraperId),
-    index('scraper_runs_started_at_idx').on(table.startedAt),
+    index('scraper_runs_scout_run_id_idx').on(table.scout_run_id),
+    index('scraper_runs_scraper_id_idx').on(table.scraper_id),
+    index('scraper_runs_started_at_idx').on(table.started_at),
   ],
 );
-
-export const savedSearches = pgTable(
-  'saved_searches',
-  {
-    id: text('id').primaryKey().$defaultFn(() => randomUUID()),
-    userId: text('user_id')
-      .notNull()
-      .references(() => neonAuthUsers.id, { onDelete: 'cascade' }),
-    name: text('name').notNull(),
-    filters: jsonb('filters').notNull(),
-    notify: boolean('notify').default(false).notNull(),
-    createdAt: timestampColumn('created_at').defaultNow().notNull(),
-  },
-  (table) => [index('saved_searches_user_id_idx').on(table.userId)],
-);
-
-export const scoutRunsRelations = relations(scoutRuns, ({ many }) => ({
-  scraperRuns: many(scraperRuns),
-}));
-
-export const scraperRunsRelations = relations(scraperRuns, ({ one }) => ({
-  scoutRun: one(scoutRuns, {
-    fields: [scraperRuns.scoutRunId],
-    references: [scoutRuns.runId],
-  }),
-}));
 
 export type Listing = typeof listings.$inferSelect;
 export type ScoutRun = typeof scoutRuns.$inferSelect;
 export type ScraperRun = typeof scraperRuns.$inferSelect;
-export type SavedSearch = typeof savedSearches.$inferSelect;
