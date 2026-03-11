@@ -7,7 +7,10 @@ import type { FeatureCollection, GeoJsonProperties, Point } from 'geojson';
 import { renderPopupMarkup } from '@/components/ListingPopup';
 import type { ListingWithLocation } from '@/lib/types';
 
-const MAP_STYLE = 'https://tiles.stadiamaps.com/styles/alidade_smooth.json';
+const STADIA_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY;
+const MAP_STYLE = STADIA_KEY
+  ? `https://tiles.stadiamaps.com/styles/alidade_smooth.json?api_key=${STADIA_KEY}`
+  : 'https://tiles.stadiamaps.com/styles/alidade_smooth.json';
 type MapLibreModule = typeof import('maplibre-gl');
 type MapInstance = import('maplibre-gl').Map;
 type PopupInstance = import('maplibre-gl').Popup;

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import ListPanel from '@/components/ListPanel';
 import Map from '@/components/Map';
 import Sidebar from '@/components/Sidebar';
@@ -37,30 +38,34 @@ export default function MapPage() {
     <div className="app-shell">
       <TopBar stats={stats} count={listings.length} loading={loading} error={error} />
       <div className="app-body">
-        <Sidebar
-          filters={filters}
-          onChange={setFilters}
-          onReset={() => setFilters(DEFAULT_FILTERS)}
-          stats={stats}
-        />
-        <div className="map-pane">
-          <Map listings={listings} selectedId={selectedId} onSelect={setSelectedId} />
-          <button
-            className="list-toggle"
-            type="button"
-            onClick={() => setListOpen((open) => !open)}
-            aria-label={listOpen ? 'Hide listing panel' : 'Show listing panel'}
-          >
-            {listOpen ? '×' : 'LIST'}
-          </button>
-          <ListPanel
-            listings={listings}
-            selectedId={selectedId}
-            open={listOpen}
-            onSelect={setSelectedId}
-            onClose={() => setListOpen(false)}
+        <ErrorBoundary>
+          <Sidebar
+            filters={filters}
+            onChange={setFilters}
+            onReset={() => setFilters(DEFAULT_FILTERS)}
+            stats={stats}
           />
-        </div>
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <div className="map-pane">
+            <Map listings={listings} selectedId={selectedId} onSelect={setSelectedId} />
+            <button
+              className="list-toggle"
+              type="button"
+              onClick={() => setListOpen((open) => !open)}
+              aria-label={listOpen ? 'Hide listing panel' : 'Show listing panel'}
+            >
+              {listOpen ? '×' : 'LIST'}
+            </button>
+            <ListPanel
+              listings={listings}
+              selectedId={selectedId}
+              open={listOpen}
+              onSelect={setSelectedId}
+              onClose={() => setListOpen(false)}
+            />
+          </div>
+        </ErrorBoundary>
       </div>
     </div>
   );
