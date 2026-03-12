@@ -7,16 +7,23 @@ export const dynamic = 'force-dynamic';
 
 type HealthStatus = 'ok' | 'degraded' | 'down';
 
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+type HealthRun = {
+  started_at: string | null;
+  listings_found: number;
+  error: string | null;
+};
 
-function consecutiveZeros(runs: Array<{ listings_found: number }>) {
+const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
+
+function consecutiveZeros(runs: HealthRun[]) {
   let count = 0;
 
   for (const run of runs) {
-    if (run.listings_found > 0) {
-      break;
+    if (run.listings_found === 0 && run.error === null) {
+      count += 1;
+      continue;
     }
-    count += 1;
+    break;
   }
 
   return count;
@@ -28,7 +35,7 @@ function toStatus(lastRun: string | null, zeroCount: number): HealthStatus {
   }
 
   const lastRunTime = Date.parse(lastRun);
-  const stale = Number.isNaN(lastRunTime) || lastRunTime < Date.now() - SEVEN_DAYS_MS;
+  const stale = Number.isNaN(lastRunTime) || lastRunTime < Date.now() - FOURTEEN_DAYS_MS;
 
   if (stale || zeroCount > 5) {
     return 'down';
@@ -48,6 +55,7 @@ export async function GET() {
         scraper_id: schema.scraperRuns.scraper_id,
         started_at: schema.scraperRuns.started_at,
         listings_found: schema.scraperRuns.listings_found,
+        error: schema.scraperRuns.error,
       })
       .from(schema.scraperRuns)
       .orderBy(schema.scraperRuns.scraper_id, desc(schema.scraperRuns.started_at)),
@@ -60,13 +68,7 @@ export async function GET() {
       .limit(1),
   ]);
 
-  const runsByScraper = new Map<
-    string,
-    Array<{
-      started_at: string | null;
-      listings_found: number;
-    }>
-  >();
+  const runsByScraper = new Map<string, HealthRun[]>();
 
   for (const row of scraperRuns) {
     const runs = runsByScraper.get(row.scraper_id) ?? [];
@@ -77,6 +79,7 @@ export async function GET() {
     runs.push({
       started_at: row.started_at,
       listings_found: row.listings_found,
+      error: row.error,
     });
     runsByScraper.set(row.scraper_id, runs);
   }
