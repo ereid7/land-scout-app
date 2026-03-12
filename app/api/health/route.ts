@@ -1,11 +1,11 @@
-import { desc } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 import { db, schema } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
-type HealthStatus = 'ok' | 'degraded' | 'down';
+type HealthStatus = 'ok' | 'degraded' | 'down' | 'unknown';
 
 type HealthRun = {
   started_at: string | null;
@@ -31,7 +31,7 @@ function consecutiveZeros(runs: HealthRun[]) {
 
 function toStatus(lastRun: string | null, zeroCount: number): HealthStatus {
   if (!lastRun) {
-    return 'down';
+    return 'unknown';
   }
 
   const lastRunTime = Date.parse(lastRun);
@@ -49,7 +49,7 @@ function toStatus(lastRun: string | null, zeroCount: number): HealthStatus {
 }
 
 export async function GET() {
-  const [scraperRuns, scoutRuns] = await Promise.all([
+  const [scraperRuns, scoutRuns, activeListings] = await Promise.all([
     db
       .select({
         scraper_id: schema.scraperRuns.scraper_id,
@@ -66,6 +66,12 @@ export async function GET() {
       .from(schema.scoutRuns)
       .orderBy(desc(schema.scoutRuns.started_at))
       .limit(1),
+    db
+      .select({
+        total: count(),
+      })
+      .from(schema.listings)
+      .where(and(eq(schema.listings.status, 'active'), eq(schema.listings.is_duplicate, false))),
   ]);
 
   const runsByScraper = new Map<string, HealthRun[]>();
@@ -92,7 +98,7 @@ export async function GET() {
       return {
         id,
         last_run: latestRun?.started_at ?? null,
-        last_found: latestRun?.listings_found ?? null,
+        last_found: latestRun?.listings_found ?? 0,
         consecutive_zeros: zeroCount,
         status: toStatus(latestRun?.started_at ?? null, zeroCount),
       };
@@ -102,5 +108,6 @@ export async function GET() {
   return NextResponse.json({
     scrapers,
     last_scout_run: scoutRuns[0]?.started_at ?? null,
+    total_active: Number(activeListings[0]?.total ?? 0),
   });
 }

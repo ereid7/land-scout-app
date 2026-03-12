@@ -2,6 +2,7 @@
 
 import { UserButton } from '@neondatabase/auth/react/ui';
 
+import HealthPanel from '@/components/HealthPanel';
 import ScrapeBadge from '@/components/ScrapeBadge';
 import type { Stats } from '@/lib/types';
 
@@ -39,9 +40,12 @@ export default function TopBar({
           ? `Last run ${new Date(stats.lastRun).toLocaleString()}`
           : 'Waiting for runs...'}
       </div>
-      <ScrapeBadge />
-      {authEnabled && <UserButton size="icon" />}
       {error ? <div className="topbar-stat topbar-stat--error">{error}</div> : null}
+      <div className="topbar-actions">
+        <ScrapeBadge />
+        <HealthPanel />
+        {authEnabled && <UserButton size="icon" />}
+      </div>
     </header>
   );
 }
