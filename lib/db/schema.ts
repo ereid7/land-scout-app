@@ -73,6 +73,7 @@ export const listings = pgTable(
     source_aliases: text('source_aliases'),
     days_on_market: integer('days_on_market').default(0).notNull(),
     drive_hours: numericColumn('drive_hours'),
+    nearest_major_city: text('nearest_major_city'),
     est_annual_lease: numericColumn('est_annual_lease'),
     status: text('status').default('active').notNull(),
     first_seen: timestampColumn('first_seen'),
@@ -152,7 +153,15 @@ export const savedSearches = pgTable(
   (table) => [index('saved_searches_user_id_idx').on(table.userId)],
 );
 
+export const waitlist = pgTable('waitlist', {
+  id: text('id').primaryKey().$defaultFn(() => randomUUID()),
+  email: text('email').notNull().unique(),
+  createdAt: timestampColumn('created_at').defaultNow().notNull(),
+  source: text('source').default('landing').notNull(),
+});
+
 export type Listing = typeof listings.$inferSelect;
 export type ScoutRun = typeof scoutRuns.$inferSelect;
 export type ScraperRun = typeof scraperRuns.$inferSelect;
 export type SavedSearch = typeof savedSearches.$inferSelect;
+export type Waitlist = typeof waitlist.$inferSelect;

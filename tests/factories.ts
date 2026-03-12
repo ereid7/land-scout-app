@@ -47,6 +47,7 @@ export function createListing(overrides: Partial<Listing> = {}): Listing {
     source_aliases: null,
     days_on_market: 0,
     drive_hours: null,
+    nearest_major_city: null,
     est_annual_lease: null,
     status: 'active',
     first_seen: null,
