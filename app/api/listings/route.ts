@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull, lte, or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, isNull, lte, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { db, schema } from '@/lib/db';
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
   const ownerFinance = searchParams.get('owner_finance') === 'true';
   const noHoa = searchParams.get('no_hoa') === 'true';
   const motivated = searchParams.get('motivated') === 'true';
+  const bboxStr = searchParams.get('bbox');
 
   const conditions = [
     eq(schema.listings.status, 'active'),
@@ -53,11 +54,24 @@ export async function GET(request: NextRequest) {
     conditions.push(eq(schema.listings.motivated_seller, true));
   }
 
+  if (bboxStr) {
+    const [minLng, minLat, maxLng, maxLat] = bboxStr.split(',').map(Number);
+
+    if ([minLng, minLat, maxLng, maxLat].every(Number.isFinite)) {
+      conditions.push(isNotNull(schema.listings.longitude));
+      conditions.push(isNotNull(schema.listings.latitude));
+      conditions.push(gte(schema.listings.longitude, minLng));
+      conditions.push(lte(schema.listings.longitude, maxLng));
+      conditions.push(gte(schema.listings.latitude, minLat));
+      conditions.push(lte(schema.listings.latitude, maxLat));
+    }
+  }
+
   const rows = await db
     .select()
     .from(schema.listings)
     .where(and(...conditions))
-    .orderBy(desc(schema.listings.score), schema.listings.price)
+    .orderBy(desc(schema.listings.score), asc(schema.listings.price))
     .limit(1200);
 
   return NextResponse.json(listingsToFeatureCollection(rows));

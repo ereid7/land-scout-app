@@ -22,6 +22,14 @@ function extractParam(snapshot: QuerySnapshot | null, pattern: RegExp) {
   return snapshot.params[Number(match[1]) - 1];
 }
 
+function extractParams(snapshot: QuerySnapshot | null, pattern: RegExp) {
+  if (!snapshot) {
+    return [];
+  }
+
+  return Array.from(snapshot.sql.matchAll(pattern)).map((match) => snapshot.params[Number(match[1]) - 1]);
+}
+
 function extractHoaRiskParams(snapshot: QuerySnapshot | null) {
   if (!snapshot) {
     return [];
@@ -71,6 +79,26 @@ function applyQuery(rows: Listing[], snapshot: QuerySnapshot | null, limit: numb
 
     const motivated = extractParam(snapshot, /"listings"\."motivated_seller" = \$(\d+)/);
     if (typeof motivated === 'boolean' && row.motivated_seller !== motivated) {
+      return false;
+    }
+
+    const minLongitude = extractParam(snapshot, /"listings"\."longitude" >= \$(\d+)/);
+    if (minLongitude !== undefined && (row.longitude === null || Number(row.longitude) < Number(minLongitude))) {
+      return false;
+    }
+
+    const maxLongitude = extractParam(snapshot, /"listings"\."longitude" <= \$(\d+)/);
+    if (maxLongitude !== undefined && (row.longitude === null || Number(row.longitude) > Number(maxLongitude))) {
+      return false;
+    }
+
+    const minLatitude = extractParam(snapshot, /"listings"\."latitude" >= \$(\d+)/);
+    if (minLatitude !== undefined && (row.latitude === null || Number(row.latitude) < Number(minLatitude))) {
+      return false;
+    }
+
+    const maxLatitude = extractParam(snapshot, /"listings"\."latitude" <= \$(\d+)/);
+    if (maxLatitude !== undefined && (row.latitude === null || Number(row.latitude) > Number(maxLatitude))) {
       return false;
     }
 
@@ -160,6 +188,8 @@ describe('GET /api/listings', () => {
         acres: 10,
         owner_financing: true,
         hoa_risk: 'low',
+        latitude: 37.4,
+        longitude: -91.1,
       }),
       createListing({
         id: 'active-wi',
@@ -169,6 +199,8 @@ describe('GET /api/listings', () => {
         acres: 12,
         owner_financing: false,
         hoa_risk: 'unknown',
+        latitude: 44.9,
+        longitude: -89.7,
       }),
       createListing({
         id: 'active-mo-high-hoa',
@@ -178,6 +210,8 @@ describe('GET /api/listings', () => {
         acres: 8,
         owner_financing: false,
         hoa_risk: 'high',
+        latitude: 36.4,
+        longitude: -92.8,
       }),
       createListing({
         id: 'inactive',
@@ -250,5 +284,33 @@ describe('GET /api/listings', () => {
     expect(response.status).toBe(200);
     expect(ids).toEqual(['active-mo-owner-finance', 'active-wi', 'active-mo-high-hoa']);
     expect(queryState.lastWhere?.params.slice(0, 5)).toEqual(['active', false, 0, '35000', '1']);
+  });
+
+  it('filters listings to the current bbox when provided', async () => {
+    queryState.rows.push(
+      createListing({
+        id: 'active-no-coords',
+        score: 88,
+        latitude: null,
+        longitude: null,
+      }),
+    );
+
+    const { ids } = await responseListingIds('/api/listings?bbox=-91.5,37,-90.5,38');
+
+    expect(ids).toEqual(['active-mo-owner-finance']);
+    expect(queryState.lastWhere?.sql).toContain('"listings"."longitude" is not null');
+    expect(queryState.lastWhere?.sql).toContain('"listings"."latitude" is not null');
+    expect(queryState.lastWhere?.sql).toContain('"listings"."longitude" >= ');
+    expect(queryState.lastWhere?.sql).toContain('"listings"."longitude" <= ');
+    expect(queryState.lastWhere?.sql).toContain('"listings"."latitude" >= ');
+    expect(queryState.lastWhere?.sql).toContain('"listings"."latitude" <= ');
+    expect(
+      extractParams(queryState.lastWhere, /"listings"\."longitude" [<>]= \$(\d+)/g).map(Number),
+    ).toEqual([-91.5, -90.5]);
+    expect(extractParams(queryState.lastWhere, /"listings"\."latitude" [<>]= \$(\d+)/g).map(Number)).toEqual([
+      37,
+      38,
+    ]);
   });
 });

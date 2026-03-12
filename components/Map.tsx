@@ -5,7 +5,7 @@ import type { MutableRefObject } from 'react';
 import type { FeatureCollection, GeoJsonProperties, Point } from 'geojson';
 
 import { renderPopupMarkup } from '@/components/ListingPopup';
-import type { ListingWithLocation } from '@/lib/types';
+import type { ListingBbox, ListingWithLocation } from '@/lib/types';
 
 const STADIA_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY;
 const MAP_STYLE = STADIA_KEY
@@ -47,6 +47,11 @@ function toFeatureCollection(listings: ListingWithLocation[]): FeatureCollection
 function setSourceData(map: MapInstance, sourceId: string, data: FeatureCollectionData) {
   const source = map.getSource(sourceId) as GeoJSONSource | undefined;
   source?.setData(data);
+}
+
+function getBoundsTuple(map: MapInstance): ListingBbox {
+  const bounds = map.getBounds();
+  return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()];
 }
 
 function updateSelectedSource(map: MapInstance, listing: ListingWithLocation | null) {
@@ -270,10 +275,12 @@ export default function Map({
   listings,
   selectedId,
   onSelect,
+  onBoundsChange,
 }: {
   listings: ListingWithLocation[];
   selectedId: string | null;
   onSelect: (listingId: string | null) => void;
+  onBoundsChange?: (bounds: ListingBbox) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapInstance | null>(null);
@@ -315,13 +322,20 @@ export default function Map({
       });
       resizeObserver.observe(containerRef.current);
 
+      const emitBounds = () => {
+        onBoundsChange?.(getBoundsTuple(map));
+      };
+
       map.on('load', () => {
         ensureLayers(map, maplibregl, onSelect, popupRef, listingsRef);
         setSourceData(map, 'listings', toFeatureCollection(listingsRef.current));
         const selectedListing =
           listingsRef.current.find((listing) => listing.id === selectedIdRef.current) ?? null;
         updateSelectedSource(map, selectedListing);
+        emitBounds();
       });
+
+      map.on('move', emitBounds);
     }
 
     initMap().catch(() => {});

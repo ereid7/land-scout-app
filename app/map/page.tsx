@@ -9,7 +9,7 @@ import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/TopBar';
 import { useListings } from '@/hooks/useListings';
 import { useStats } from '@/hooks/useStats';
-import type { ListingFilters } from '@/lib/types';
+import type { ListingBbox, ListingFilters } from '@/lib/types';
 
 const DEFAULT_FILTERS: ListingFilters = {
   minScore: 0,
@@ -23,9 +23,10 @@ const DEFAULT_FILTERS: ListingFilters = {
 
 export default function MapPage() {
   const [filters, setFilters] = useState<ListingFilters>(DEFAULT_FILTERS);
+  const [bbox, setBbox] = useState<ListingBbox | undefined>(undefined);
   const [listOpen, setListOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { listings, loading, error } = useListings(filters);
+  const { listings, loading, error } = useListings({ ...filters, bbox });
   const stats = useStats();
 
   useEffect(() => {
@@ -48,7 +49,12 @@ export default function MapPage() {
         </ErrorBoundary>
         <ErrorBoundary>
           <div className="map-pane">
-            <Map listings={listings} selectedId={selectedId} onSelect={setSelectedId} />
+            <Map
+              listings={listings}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onBoundsChange={setBbox}
+            />
             <button
               className="list-toggle"
               type="button"

@@ -11,6 +11,7 @@ export type ScoutRun = DatabaseScoutRun;
 export type ScraperRun = DatabaseScraperRun;
 
 export type LocationSource = 'listing' | 'state_centroid';
+export type ListingBbox = [number, number, number, number];
 
 export interface ListingWithLocation extends DatabaseListing {
   has_exact_coordinates: boolean;

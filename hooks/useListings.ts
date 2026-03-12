@@ -3,14 +3,24 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { normalizeFeatureCollection } from '@/lib/listing-helpers';
-import type { ListingFeatureCollection, ListingFilters, ListingWithLocation } from '@/lib/types';
+import type {
+  ListingBbox,
+  ListingFeatureCollection,
+  ListingFilters,
+  ListingWithLocation,
+} from '@/lib/types';
 
-export function useListings(filters: ListingFilters) {
+type UseListingsParams = ListingFilters & {
+  bbox?: ListingBbox;
+};
+
+export function useListings(filters: UseListingsParams) {
   const [listings, setListings] = useState<ListingWithLocation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const timerRef = useRef<number | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
+  const bboxKey = filters.bbox?.join(',') ?? '';
 
   useEffect(() => {
     if (timerRef.current) {
@@ -46,6 +56,9 @@ export function useListings(filters: ListingFilters) {
       }
       if (filters.motivated) {
         params.set('motivated', 'true');
+      }
+      if (bboxKey) {
+        params.set('bbox', bboxKey);
       }
 
       fetch(`/api/listings?${params.toString()}`, { signal: controller.signal })
@@ -89,6 +102,7 @@ export function useListings(filters: ListingFilters) {
       }
     };
   }, [
+    bboxKey,
     filters.maxPrice,
     filters.minAcres,
     filters.minScore,
