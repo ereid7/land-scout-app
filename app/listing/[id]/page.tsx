@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 
+import PropertyBrief from '@/components/PropertyBrief';
 import { db, schema } from '@/lib/db';
 import { formatCurrency } from '@/lib/listing-helpers';
 
@@ -96,6 +97,8 @@ export default async function ListingPage({ params }: { params: { id: string } }
             <div className="listing-detail__score">{listing.score}★ scout score</div>
           </div>
         </section>
+
+        <PropertyBrief listingId={listing.id} />
 
         <div className="listing-detail__grid">
           <section className="listing-detail__section">

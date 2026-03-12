@@ -1,5 +1,6 @@
 'use client';
 
+import { useBrief } from '@/hooks/useBrief';
 import { formatCurrency } from '@/lib/listing-helpers';
 import type { ListingWithLocation } from '@/lib/types';
 
@@ -35,9 +36,11 @@ export default function ListPanel({
     }
     return (left.price ?? Number.MAX_SAFE_INTEGER) - (right.price ?? Number.MAX_SAFE_INTEGER);
   });
+  const selectedListing = sortedListings.find((listing) => listing.id === selectedId) ?? null;
+  const { brief, loading: briefLoading } = useBrief(selectedListing?.id ?? null);
 
   return (
-    <aside className={`list-panel${open ? ' list-panel--open' : ''}`}>
+    <aside className={`list-panel app-listpanel${open ? ' list-panel--open' : ''}`}>
       <div className="list-panel__header">
         <div>
           <div className="list-panel__title">Listings</div>
@@ -80,6 +83,39 @@ export default function ListPanel({
             </button>
           ))
         )}
+      </div>
+      <div className="list-panel__footer">
+        <div className="list-panel__preview">
+          <div className="list-panel__preview-eyebrow">Brief Preview</div>
+          {!selectedListing ? (
+            <div className="list-panel__preview-empty">Select a parcel to preview its property brief.</div>
+          ) : briefLoading ? (
+            <div className="list-panel__preview-empty">Loading brief...</div>
+          ) : !brief ? (
+            <div className="list-panel__preview-empty">Brief unavailable for this listing.</div>
+          ) : (
+            <>
+              <div className="list-panel__preview-header">
+                <div className="list-panel__preview-title">
+                  {formatCurrency(selectedListing.price)} · {selectedListing.acres ?? 'N/A'} ac
+                </div>
+                <span className="pill">{brief.scoreLabel}</span>
+              </div>
+              <div className="list-panel__preview-flags">
+                {brief.positives.slice(0, 3).map((positive) => (
+                  <span key={positive} className="list-panel__preview-flag list-panel__preview-flag--good">
+                    ✓ {positive}
+                  </span>
+                ))}
+              </div>
+              {brief.risks[0] ? (
+                <div className="list-panel__preview-risk">{brief.risks[0]}</div>
+              ) : (
+                <div className="list-panel__preview-empty">No major automated risks flagged.</div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </aside>
   );

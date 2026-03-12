@@ -78,8 +78,8 @@ export function ListingPopup({ listing }: { listing: ListingWithLocation }) {
         <div className="popup-meta">{listing.days_on_market} days on market</div>
       ) : null}
       <div className="popup-links">
-        <a className="popup-link popup-link--secondary" href={`/listing/${listing.id}`}>
-          View details →
+        <a className="popup-link popup-link--secondary popup-btn" href={`/listing/${listing.id}`}>
+          View Brief
         </a>
         {listing.url ? (
           <a className="popup-link" href={listing.url} target="_blank" rel="noreferrer">
@@ -105,7 +105,7 @@ export function renderPopupMarkup(listing: ListingWithLocation) {
       ? `<div class="popup-meta">${escapeHtml(listing.days_on_market)} days on market</div>`
       : '';
 
-  const detailsLink = `<a class="popup-link popup-link--secondary" href="/listing/${escapeHtml(listing.id)}">View details →</a>`;
+  const detailsLink = `<a class="popup-link popup-link--secondary popup-btn" href="/listing/${escapeHtml(listing.id)}">View Brief</a>`;
   const sourceLink = listing.url
     ? `<a class="popup-link" href="${escapeHtml(listing.url)}" target="_blank" rel="noreferrer">View listing →</a>`
     : '';
