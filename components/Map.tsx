@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import type { MutableRefObject } from 'react';
-import type { FeatureCollection, GeoJsonProperties, Point } from 'geojson';
+import type { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 
 import { renderPopupMarkup } from '@/components/ListingPopup';
+import { getDriveTimeCircleCoordinates } from '@/lib/drive-time';
 import type { ListingBbox, ListingWithLocation } from '@/lib/types';
 
 const STADIA_KEY = process.env.NEXT_PUBLIC_STADIA_API_KEY;
@@ -16,7 +17,7 @@ type MapInstance = import('maplibre-gl').Map;
 type PopupInstance = import('maplibre-gl').Popup;
 type GeoJSONSource = import('maplibre-gl').GeoJSONSource;
 type MapGeoJSONFeature = import('maplibre-gl').MapGeoJSONFeature;
-type FeatureCollectionData = FeatureCollection<Point, GeoJsonProperties>;
+type FeatureCollectionData = FeatureCollection<Geometry, GeoJsonProperties>;
 const EMPTY_COLLECTION: FeatureCollectionData = {
   type: 'FeatureCollection',
   features: [],
@@ -41,6 +42,32 @@ function toFeatureCollection(listings: ListingWithLocation[]): FeatureCollection
         },
         properties: listing as unknown as GeoJsonProperties,
       })),
+  };
+}
+
+function toDriveTimeFeatureCollection(
+  lat: number | null,
+  lng: number | null,
+  hours: number,
+): FeatureCollectionData {
+  if (!Number.isFinite(lat) || lat === null || !Number.isFinite(lng) || lng === null || hours <= 0) {
+    return EMPTY_COLLECTION;
+  }
+
+  return {
+    type: 'FeatureCollection',
+    features: [
+      {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [getDriveTimeCircleCoordinates(lat, lng, hours)],
+        },
+        properties: {
+          hours,
+        },
+      },
+    ],
   };
 }
 
@@ -88,6 +115,13 @@ function ensureLayers(
   popupRef: MutableRefObject<PopupInstance | null>,
   listingsRef: MutableRefObject<ListingWithLocation[]>,
 ) {
+  if (!map.getSource('drive-time')) {
+    map.addSource('drive-time', {
+      type: 'geojson',
+      data: EMPTY_COLLECTION,
+    });
+  }
+
   if (!map.getSource('listings')) {
     map.addSource('listings', {
       type: 'geojson',
@@ -105,6 +139,32 @@ function ensureLayers(
     map.addSource('selected-listing', {
       type: 'geojson',
       data: EMPTY_COLLECTION,
+    });
+  }
+
+  if (!map.getLayer('drive-time-fill')) {
+    map.addLayer({
+      id: 'drive-time-fill',
+      type: 'fill',
+      source: 'drive-time',
+      paint: {
+        'fill-color': '#2d678a',
+        'fill-opacity': 0.08,
+      },
+    });
+  }
+
+  if (!map.getLayer('drive-time-outline')) {
+    map.addLayer({
+      id: 'drive-time-outline',
+      type: 'line',
+      source: 'drive-time',
+      paint: {
+        'line-color': '#2d678a',
+        'line-dasharray': [2, 1.5],
+        'line-opacity': 0.72,
+        'line-width': 2,
+      },
     });
   }
 
@@ -276,11 +336,17 @@ export default function Map({
   selectedId,
   onSelect,
   onBoundsChange,
+  driveTimeLat,
+  driveTimeLng,
+  driveTimeHours,
 }: {
   listings: ListingWithLocation[];
   selectedId: string | null;
   onSelect: (listingId: string | null) => void;
   onBoundsChange?: (bounds: ListingBbox) => void;
+  driveTimeLat: number | null;
+  driveTimeLng: number | null;
+  driveTimeHours: number;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapInstance | null>(null);
@@ -328,6 +394,11 @@ export default function Map({
 
       map.on('load', () => {
         ensureLayers(map, maplibregl, onSelect, popupRef, listingsRef);
+        setSourceData(
+          map,
+          'drive-time',
+          toDriveTimeFeatureCollection(driveTimeLat, driveTimeLng, driveTimeHours),
+        );
         setSourceData(map, 'listings', toFeatureCollection(listingsRef.current));
         const selectedListing =
           listingsRef.current.find((listing) => listing.id === selectedIdRef.current) ?? null;
@@ -349,7 +420,7 @@ export default function Map({
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [onSelect]);
+  }, [onBoundsChange, onSelect]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -359,6 +430,15 @@ export default function Map({
 
     setSourceData(map, 'listings', toFeatureCollection(listings));
   }, [listings]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded() || !map.getSource('drive-time')) {
+      return;
+    }
+
+    setSourceData(map, 'drive-time', toDriveTimeFeatureCollection(driveTimeLat, driveTimeLng, driveTimeHours));
+  }, [driveTimeHours, driveTimeLat, driveTimeLng]);
 
   useEffect(() => {
     const map = mapRef.current;

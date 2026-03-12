@@ -174,7 +174,7 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar app-sidebar">
       <div className="sidebar__header">
         <div className="sidebar__eyebrow">Filters</div>
         <h1 className="sidebar__title">Scout the current inventory</h1>
@@ -214,6 +214,39 @@ export default function Sidebar({
           states={states}
           onValueChange={(value) => updateFilter('state', value)}
         />
+      </FilterGroup>
+
+      <FilterGroup
+        label="Drive time from"
+        value={filters.driveTimeCity.trim() ? `Within ${filters.driveTimeHours}h` : undefined}
+      >
+        <input
+          type="text"
+          className="filter-input"
+          placeholder="Minneapolis, MN"
+          value={filters.driveTimeCity}
+          onChange={(event) => {
+            const nextCity = event.target.value;
+            onChange((current) => ({
+              ...current,
+              driveTimeCity: nextCity,
+              driveTimeLat: null,
+              driveTimeLng: null,
+            }));
+          }}
+        />
+        {filters.driveTimeCity.trim() ? (
+          <select
+            className="filter-select"
+            value={filters.driveTimeHours}
+            onChange={(event) => updateFilter('driveTimeHours', Number(event.target.value))}
+          >
+            <option value={1}>Within 1 hour</option>
+            <option value={2}>Within 2 hours</option>
+            <option value={3}>Within 3 hours</option>
+            <option value={4}>Within 4 hours</option>
+          </select>
+        ) : null}
       </FilterGroup>
 
       <div className="sidebar__checks">

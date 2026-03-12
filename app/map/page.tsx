@@ -19,6 +19,10 @@ const DEFAULT_FILTERS: ListingFilters = {
   ownerFinance: false,
   noHoa: false,
   motivated: false,
+  driveTimeCity: '',
+  driveTimeHours: 2,
+  driveTimeLat: null,
+  driveTimeLng: null,
 };
 
 export default function MapPage() {
@@ -26,7 +30,7 @@ export default function MapPage() {
   const [bbox, setBbox] = useState<ListingBbox | undefined>(undefined);
   const [listOpen, setListOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { listings, loading, error } = useListings({ ...filters, bbox });
+  const { listings, loading, error } = useListings({ filters, bbox, setFilters });
   const stats = useStats();
 
   useEffect(() => {
@@ -48,12 +52,15 @@ export default function MapPage() {
           />
         </ErrorBoundary>
         <ErrorBoundary>
-          <div className="map-pane">
+          <div className="map-pane map-container">
             <Map
               listings={listings}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onBoundsChange={setBbox}
+              driveTimeLat={filters.driveTimeLat}
+              driveTimeLng={filters.driveTimeLng}
+              driveTimeHours={filters.driveTimeHours}
             />
             <button
               className="list-toggle"

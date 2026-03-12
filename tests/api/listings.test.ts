@@ -313,4 +313,52 @@ describe('GET /api/listings', () => {
       38,
     ]);
   });
+
+  it('adds drive-time latitude and longitude bounds when drive params are provided', async () => {
+    const driveLat = 44.98;
+    const driveLng = -93.26;
+    const driveHours = 2;
+    const radiusMiles = driveHours * 55;
+    const expectedLatBounds = [driveLat - radiusMiles / 69, driveLat + radiusMiles / 69];
+    const expectedLngRadius = radiusMiles / (69 * Math.cos((driveLat * Math.PI) / 180));
+    const expectedLngBounds = [driveLng - expectedLngRadius, driveLng + expectedLngRadius];
+
+    queryState.rows.push(
+      createListing({
+        id: 'active-drive-time-match',
+        state: 'Minnesota',
+        score: 88,
+        price: 12500,
+        acres: 9,
+        latitude: 45.02,
+        longitude: -93.18,
+      }),
+    );
+
+    const { ids } = await responseListingIds(
+      `/api/listings?drive_lat=${driveLat}&drive_lng=${driveLng}&drive_hours=${driveHours}`,
+    );
+
+    expect(ids).toEqual(['active-drive-time-match']);
+    expect(
+      extractParams(queryState.lastWhere, /"listings"\."latitude" [<>]= \$(\d+)/g)
+        .slice(-2)
+        .map(Number),
+    ).toEqual(expectedLatBounds);
+    expect(
+      extractParams(queryState.lastWhere, /"listings"\."longitude" [<>]= \$(\d+)/g)
+        .slice(-2)
+        .map(Number),
+    ).toEqual(expectedLngBounds);
+  });
+
+  it('does not add drive-time bounds when drive params are missing', async () => {
+    await responseListingIds('/api/listings?min_score=80');
+
+    const longitudeBounds = extractParams(queryState.lastWhere, /"listings"\."longitude" [<>]= \$(\d+)/g);
+    const latitudeBounds = extractParams(queryState.lastWhere, /"listings"\."latitude" [<>]= \$(\d+)/g);
+
+    expect(longitudeBounds).toEqual([]);
+    expect(latitudeBounds).toEqual([]);
+  });
 });

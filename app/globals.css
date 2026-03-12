@@ -308,6 +308,8 @@ a {
 }
 
 .slider-thumb:focus-visible,
+.filter-input:focus-visible,
+.filter-select:focus-visible,
 .select-trigger:focus-visible,
 .checkbox-root:focus-visible,
 .primary-button:focus-visible,
@@ -323,6 +325,17 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  color: var(--text);
+}
+
+.filter-input,
+.filter-select {
   width: 100%;
   min-height: 42px;
   padding: 0 12px;

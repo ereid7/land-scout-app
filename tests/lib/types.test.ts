@@ -22,6 +22,10 @@ describe('lib/types exports', () => {
       ownerFinance: true,
       noHoa: true,
       motivated: false,
+      driveTimeCity: 'Minneapolis, MN',
+      driveTimeHours: 2,
+      driveTimeLat: 44.9778,
+      driveTimeLng: -93.265,
     };
 
     const stats = {

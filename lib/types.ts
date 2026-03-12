@@ -26,6 +26,10 @@ export interface ListingFilters {
   ownerFinance: boolean;
   noHoa: boolean;
   motivated: boolean;
+  driveTimeCity: string;
+  driveTimeHours: number;
+  driveTimeLat: number | null;
+  driveTimeLng: number | null;
 }
 
 export interface Stats {
