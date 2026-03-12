@@ -77,11 +77,16 @@ export function ListingPopup({ listing }: { listing: ListingWithLocation }) {
       {(listing.days_on_market ?? 0) > 0 ? (
         <div className="popup-meta">{listing.days_on_market} days on market</div>
       ) : null}
-      {listing.url ? (
-        <a className="popup-link" href={listing.url} target="_blank" rel="noreferrer">
-          View listing →
+      <div className="popup-links">
+        <a className="popup-link popup-link--secondary" href={`/listing/${listing.id}`}>
+          View details →
         </a>
-      ) : null}
+        {listing.url ? (
+          <a className="popup-link" href={listing.url} target="_blank" rel="noreferrer">
+            View listing →
+          </a>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -100,7 +105,8 @@ export function renderPopupMarkup(listing: ListingWithLocation) {
       ? `<div class="popup-meta">${escapeHtml(listing.days_on_market)} days on market</div>`
       : '';
 
-  const link = listing.url
+  const detailsLink = `<a class="popup-link popup-link--secondary" href="/listing/${escapeHtml(listing.id)}">View details →</a>`;
+  const sourceLink = listing.url
     ? `<a class="popup-link" href="${escapeHtml(listing.url)}" target="_blank" rel="noreferrer">View listing →</a>`
     : '';
 
@@ -116,7 +122,7 @@ export function renderPopupMarkup(listing: ListingWithLocation) {
       <div class="popup-meta">${escapeHtml(location)}</div>
       ${badges ? `<div class="popup-badges">${badges}</div>` : ''}
       ${marketText}
-      ${link}
+      <div class="popup-links">${detailsLink}${sourceLink}</div>
     </div>
   `.trim();
 }
